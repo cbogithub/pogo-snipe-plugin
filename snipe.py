@@ -182,7 +182,6 @@ class PoGoSnpie(BaseTask):
         self.pokemon_noti_list.append(pokemon_noti)
 
     def get_pokemon(self, pokemon):
-        print pokemon
         if 'pokemon_id' not in pokemon:
             pokemon['pokemon_id'] = pokemon['pokemon_data']['pokemon_id']
 
