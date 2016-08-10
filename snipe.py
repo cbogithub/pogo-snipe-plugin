@@ -162,7 +162,7 @@ class PoGoSnpie(BaseTask):
         self.emit_event(
             'snipe_not_found',
             formatted='{poke_name} ({lat} {lng}) is not found',
-            data={'poke_name': pokemon_noti['name'], 'lat': pokemon_noti['lat'], 'lng': pokemon_noti['lon']}
+            data={'poke_name': pokemon_name, 'lat': lat, 'lng': lng}
         )
         if first_retry == True:
             return self.find_pokemon(lat, lng, pokemon_name, False)
