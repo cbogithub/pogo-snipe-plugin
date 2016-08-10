@@ -1,1 +1,1 @@
-from my_print import PrintText
+from snipe import PoGoSnpie
