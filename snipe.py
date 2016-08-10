@@ -173,11 +173,12 @@ class PoGoSnpie(BaseTask):
         pokemon_noti['lat'] = float(re.search(p, pokemon_noti['lat']).group())
         pokemon_noti['lon'] = float(re.search(p, pokemon_noti['lon']).group())
 
-        self.emit_event(
-            'snipe_detected',
-            formatted='{poke_name} ({lat} {lng}) is detected',
-            data={'poke_name': pokemon_noti['name'], 'lat': pokemon_noti['lat'], 'lng': pokemon_noti['lon']}
-        )
+        if pokemon_noti['name'] in self.watch_pokemon:
+            self.emit_event(
+                'snipe_detected',
+                formatted='{poke_name} ({lat} {lng}) is detected',
+                data={'poke_name': pokemon_noti['name'], 'lat': pokemon_noti['lat'], 'lng': pokemon_noti['lon']}
+            )
 
         self.pokemon_noti_list.append(pokemon_noti)
 
