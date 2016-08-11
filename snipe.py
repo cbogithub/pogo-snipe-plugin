@@ -2,8 +2,12 @@
 import re
 import threading
 import time
+import datetime
 import base64
 
+import requests
+
+from sets import Set
 from pgoapi.utilities import get_cell_ids
 
 from pokemongo_bot.cell_workers.utils import distance
@@ -23,7 +27,8 @@ class PoGoSnpie(BaseTask):
         self.watch_pokemon = self.config.get('watch_pokemon', [])
         self.min_ball = self.config.get('min_ball', 1)
         self.pokemon_noti_list = []
-        self.pokemon_caught = {}
+        self.pokemon_caught = Set([])
+        self.last_clear = time.time()
 
         self.bot.event_manager.register_event(
             'snipe_teleport_to',
@@ -50,9 +55,9 @@ class PoGoSnpie(BaseTask):
             parameters=('poke_name', 'lat', 'lng')
         )
 
-        self.sio = SocketIO('188.165.224.208', '49001')
-        poke_namespace = self.sio.define(BaseNamespace, '/pokes')
-        poke_namespace.on('poke', self.on_poke)
+        # self.sio = SocketIO('188.165.224.208', '49001')
+        # poke_namespace = self.sio.define(Namespace, '/pokes')
+        # poke_namespace.on('poke', self.on_poke)
         self.thread = threading.Thread(target=self.process_messages)
         self.thread.start()
 
@@ -62,24 +67,24 @@ class PoGoSnpie(BaseTask):
         superballs = self.bot.item_inventory_count(2)
         ultraballs = self.bot.item_inventory_count(3)
 
-        if len(self.pokemon_noti_list) == 0:
-            return WorkerResult.SUCCESS
-
         if (pokeballs + superballs + ultraballs) < self.min_ball:
             return WorkerResult.SUCCESS
 
-        pokemon_noti = self.pokemon_noti_list.pop()
+        while True:
+            if len(self.pokemon_noti_list) == 0:
+                return WorkerResult.SUCCESS
 
-        if self.was_caught(pokemon_noti):
-            return WorkerResult.SUCCESS
+            pokemon_noti = self.pokemon_noti_list.pop()
+            if self.was_caught(pokemon_noti['lat'], pokemon_noti['lon']):
+                continue
 
-        if pokemon_noti['name'] not in self.watch_pokemon:
-            return WorkerResult.SUCCESS
+            if len(self.watch_pokemon) > 0 and pokemon_noti['name'] not in self.watch_pokemon:
+                continue
 
-        return self.snipe(pokemon_noti)
+            return self.snipe(pokemon_noti)
 
     def snipe(self, pokemon_noti):
-        self.add_caught(pokemon_noti)
+        self.add_caught(pokemon_noti['lat'], pokemon_noti['lon'])
         last_position = self.bot.position[0:2]
         self.bot.heartbeat()
 
@@ -124,14 +129,66 @@ class PoGoSnpie(BaseTask):
         self.bot.api.set_position(last_position[0], last_position[1], 0)
         time.sleep(SNIPE_SLEEP_SEC)
 
-    def add_caught(self, pokemon_noti):
-        self.pokemon_caught[pokemon_noti['lat'] + pokemon_noti['lon']] = None
+    def add_caught(self, lat, lng):
+        id = str(lat) + str(lng)
+        self.pokemon_caught.add(id)
 
-    def was_caught(self, pokemon_noti):
-        return pokemon_noti['lat'] + pokemon_noti['lon'] in self.pokemon_caught.keys()
+    def was_caught(self, lat, lng):
+        id = str(lat) + str(lng)
+        return id in self.pokemon_caught
+
+    def clear_caught(self):
+        now = time.time()
+        diff = now - self.last_clear
+        if diff > 300:
+            self.last_clear = now
+            self.pokemon_caught.clear()
 
     def process_messages(self):
-        self.sio.wait()
+        while True:
+            r = requests.get('http://pokesnipers.com/api/v1/pokemon.json')
+            data = r.json()
+
+            for pokemon in data.get('results'):
+                coords = pokemon.get('coords').split(',')
+                coords[0] = float(coords[0])
+                coords[1] = float(coords[1])
+
+                until = datetime.datetime.strptime(pokemon.get('until'), '%Y-%m-%dT%H:%M:%S.%fZ')
+                now = datetime.datetime.utcnow()
+                timeDiff = until - now
+                expire_seconds = timeDiff.total_seconds()
+
+                if self.was_caught(coords[0], coords[1]):
+                    continue
+
+                if expire_seconds > 120:
+                    continue
+
+                if self.check_dup(coords):
+                   continue
+
+                if len(self.watch_pokemon) > 0 and pokemon['name'] in self.watch_pokemon:
+                    self.emit_event(
+                        'snipe_detected',
+                        formatted='{poke_name} ({lat} {lng}) is detected',
+                        data={'poke_name': pokemon['name'], 'lat': coords[0], 'lng': coords[1]}
+                    )
+
+                    self.pokemon_noti_list.append({
+                        'name': pokemon['name'],
+                        'lat': coords[0],
+                        'lon': coords[1],
+                    })
+
+            self.clear_caught()
+            time.sleep(10)
+
+    def check_dup(self, coords):
+        for noti in self.pokemon_noti_list:
+            if noti['lat'] == coords[0] and noti['lon'] == coords[1]:
+                return True
+        return False
 
     def find_pokemon(self, lat, lng, pokemon_name, first_retry):
         self.emit_event(
