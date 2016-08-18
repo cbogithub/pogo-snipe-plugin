@@ -129,18 +129,18 @@ class PoGoSnpie(BaseTask):
     self.rarespawns_sock.wait()
 
   def rarespawns_noti(self, data):
-    p = re.compile(ur'[-]?\d+[.]\d+')
-    lat = re.findall(p, data['lat'])[0]
-    if len(lat) < 1:
-      return
-    lon = re.findall(p, data['lon'])[0]
-    if len(lon) < 1:
-      return
+    # p = re.compile(ur'[-]?\d+[.]\d+')
+    # lat = re.findall(p, data['lat'])
+    # if len(lat) < 1:
+    #   return
+    # lon = re.findall(p, data['lon'])
+    # if len(lon) < 1:
+    #   return
 
     s = SnipeInfo({
       'pokemon_name': data['name'],
-      'latitude': float(lat[0]),
-      'longitude': float(lon[0]),
+      'latitude': float(data['lat']),
+      'longitude': float(data['lon']),
       'expired': time.time() + 120,
     })
 

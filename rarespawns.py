@@ -6,6 +6,14 @@ r = requests.get('http://188.165.224.208:49002/api/v1/auth')
 auth = r.json()
 
 def rarespawns_noti(data):
+  p = re.compile(ur'[-]?\d+[.]\d+')
+  lat = re.findall(p, data['lat'])
+  print lat, lat[0], len(lat)
+  if len(lat) < 1:
+    return
+  lon = re.findall(p, data['lon'])
+  if len(lon) < 1:
+    return
   print data
 
 socket = SocketIO(
