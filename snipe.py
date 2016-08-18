@@ -71,7 +71,17 @@ class PoGoSnpie(BaseTask):
       self.rarespawns()
 
   def pokezz(self):
-    self.pokezz_sock = SocketIO('pokezz.com', '80', BaseNamespace)
+    self.pokezz_sock = SocketIO(
+      host='https://pokezz.com',
+      verify=False,
+      Namespace=BaseNamespace,
+      headers={
+        'Referer': 'https://pokezz.com/',
+        'Host': 'pokezz.com',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/52.0.2743.116 Safari/537.36',
+        'Origin': 'https://pokezz.com',
+      }
+    )
     self.pokezz_sock.on('b', self.pokezz_noti)
     self.pokezz_thread = threading.Thread(target=self.pokezz_thread_process)
     self.pokezz_thread.start()
@@ -111,7 +121,7 @@ class PoGoSnpie(BaseTask):
       }
     )
     poke_namespace = self.rarespawns_sock.define(BaseNamespace, '/pokes')
-    poke_namespace.on('poke', self.rarespawns_noti)
+    poke_namespace.on('verified', self.rarespawns_noti)
     self.pokezz_thread = threading.Thread(target=self.rarespawns_thread_process)
     self.pokezz_thread.start()
 
