@@ -187,11 +187,11 @@ class PoGoSnpie(BaseTask):
       return
 
     self._encountered(pokemon)
-    catch_worker = PokemonCatchWorker(pokemon, self.bot)
+    catch_worker = PokemonCatchWorker(pokemon, self.bot, self.config)
     api_encounter_response = catch_worker.create_encounter_api_call()
     self._teleport_back(last_position)
     self.bot.heartbeat()
-    result = catch_worker.work(api_encounter_response)
+    catch_worker.work(api_encounter_response)
 
   def _teleport_to(self, snipe_info):
     self.emit_event(
