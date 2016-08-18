@@ -1,3 +1,4 @@
+import re
 import requests
 from socketIO_client import SocketIO, BaseNamespace
 
@@ -6,6 +7,7 @@ auth = r.json()
 
 def rarespawns_noti(data):
   print data
+
 
 socket = SocketIO(
   host='188.165.224.208',

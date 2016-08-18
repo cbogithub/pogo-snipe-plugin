@@ -1,7 +1,11 @@
+import re
 from socketIO_client import SocketIO, BaseNamespace
 
 def pokezz_noti(data):
-  print data
+  p = re.compile(ur'(\d+)\|([-]?\d+.\d+)\|([-]?\d+.\d+)\|(\d+)\|(\d)')
+  m = re.findall(p, data)[0]
+
+  print m
 
 socket = SocketIO(
   host='https://pokezz.com',

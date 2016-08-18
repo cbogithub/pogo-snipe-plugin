@@ -130,8 +130,8 @@ class PoGoSnpie(BaseTask):
 
   def rarespawns_noti(self, data):
     p = re.compile(ur'[-]?\d+[.]\d+')
-    lat = re.search(p, data['lat']).group()
-    lon = re.search(p, data['lon']).group()
+    lat = re.findall(p, data['lat'])[0]
+    lon = re.findall(p, data['lon'])[0]
 
     s = SnipeInfo({
       'pokemon_name': data['name'],
