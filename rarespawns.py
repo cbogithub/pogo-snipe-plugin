@@ -8,7 +8,6 @@ auth = r.json()
 def rarespawns_noti(data):
   print data
 
-
 socket = SocketIO(
   host='188.165.224.208',
   port='49001',
